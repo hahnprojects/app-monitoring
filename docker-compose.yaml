@@ -1,0 +1,46 @@
+version: '3.9'
+
+networks:
+  monitoring: {}
+
+volumes:
+  es_data: {}
+  grafana_data: {}
+
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms1g -Xmx1g'
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - monitoring
+    image: elasticsearch:7.17.0
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - monitoring
+
+  grafana:
+    container_name: grafana
+    env_file:
+      - ./grafana/config.monitoring
+    image: grafana/grafana:main
+    networks:
+      - monitoring
+    user: "104"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - grafana_data:/var/lib/grafana
